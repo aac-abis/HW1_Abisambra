@@ -1,0 +1,305 @@
+---
+title: "HW 1: OLS Review"
+subtitle: "Advanced Regression (STAT 353-0)"
+author: "Alejandro ABISAMBRA"
+pagetitle: "HW 1 ABISAMBRA"
+date: today
+
+format:
+  html:
+    toc: true
+    toc-depth: 4
+    toc-location: left
+    embed-resources: true
+    code-fold: false
+    link-external-newwindow: true
+
+execute:
+  warning: false
+
+from: markdown+emoji
+reference-location: margin
+citation-location: margin  
+---
+
+::: {.callout-tip icon=false}
+
+## Github Repo Link
+
+To link to your github **repo**sitory, appropriately edit the example link below. Meaning replace `https://your-github-repo-url` with your github repo url. Suggest verifying the link works before submitting.
+
+[https://github.com/aac-abis/HW1_Abisambra](https://github.com/aac-abis/HW1_Abisambra)
+
+:::
+
+## Overview
+
+In this homework, you will review OLS regression. The concepts focused on here are obviously not all of what you know (from STAT 350), but they are concepts that are particularly important for this course. Pay particular attention to interpretation.
+
+## Data
+
+For this assignment, we are using the `Duncan` dataset. This dataset provides data on the prestige and other characteristics of 45 U. S. occupations in 1950. The data was collected by the sociologist [Otis Dudley Duncan](https://en.wikipedia.org/wiki/Otis_Dudley_Duncan).
+
+## Preliminaries
+
+As a first step, we load the `{car}` package. This is the package developed by the author of our textbook and contains several useful functions and datasets, so we will be using it throughout this quarter.
+
+Begin by examining the first few rows of the `Duncan` data:
+
+```{r, warning=FALSE}
+library("car") # load car and carData packages
+library(tidyverse)
+library(stargazer)
+```
+
+```{r}
+head(Duncan, n=10)
+dim(Duncan)
+```
+
+Obtain summary statistics for the variables in `Duncan`:
+
+```{r}
+summary(Duncan)
+```
+
+As a first graph, we view a histogram of the variable `prestige`:
+
+```{r}
+with(Duncan, hist(prestige))
+```
+
+## Exercises
+
+### 1. Examining the Data
+
+A first step for any analysis should include Exploratory Data Analysis (EDA). This allows you to check to see that you understand the variables - how they are coded, if they are factors or continuous, and if there are mistakes.
+
+The `scatterplotMatrix()` function in the **car** package produces scatterplots for all pairs of variables. A few relatively remote points are marked by case names, in this instance by occupation.
+
+::: {.callout-tip icon="false"}
+## Solution
+
+First I will set the order of the "type" levels as follows:
+
+bc (blue collar), wc (white collar), professional
+
+as opposed to sorting them alphabetically. This will make the scatter plots easier to interpret.
+
+```{r fig.height=8, fig.width=8, warning=FALSE}
+duncan_data <- Duncan
+
+duncan_data$type <- factor(duncan_data$type, levels = c("bc", "wc", "prof"))
+
+scatterplotMatrix(duncan_data)
+```
+
+:::
+
+
+Via the scatterplots above - and any other EDA you'd like to do - describe the data. What seems to be going on here?
+
+::: {.callout-tip icon="false"}
+## Solution
+In addition to the scatterplots, I will construct a pairwise correlation table to assess the relationship between each pair of variables. (I will do this only for the continuous variables, of course).
+```{r}
+# Create data frame
+duncan_cont_data <- duncan_data %>% select(-type)
+
+# Compute the correlation matrix
+cor_matrix <- cor(duncan_cont_data, use = "pairwise.complete.obs", 
+                  method = "pearson")
+
+# Print the correlation table
+print(cor_matrix)
+```
+
+**Based on the EDA, What seems to be going on?**
+The scatter plots above suggest a segmentation of the data for each variable that is increasing on most of the other variables. For example, education is increasing on both income and prestige. Higher levels of income (or prestige) are associated with higher levels of education. These relationships are corroborated by the pairwise correlation table above. The correlation table shows that the pairwise correlations are positive and large (>0.7) for the continuous variables. 
+
+With respect to the type of occupation (the only non-continuous variable), the relationship with the other variables also seems to be increasing. Taking the order of the categories as blue collar, white collar, prof, the scatter plots show that professional occupations are associated with the highest levels of income, prestige, and education, followed by white collar occupations and then lastly by blue collar occupations.
+
+:::
+
+### 2. Regression Analysis
+
+#### A. Model 1
+
+Use the`lm()` function to fit a linear regression model to the data, in which `education` and `income` are regressed on `prestige`.
+
+Interpret the findings from this model. Are education and income good explanations for an occupation's prestige? Interpret the coefficient for income - what does it mean? Does education or income have a larger effect on prestige? Justify your conclusion.
+
+::: {.callout-tip icon="false"}
+## Solution
+
+```{r}
+m1 <- lm(prestige ~ education + income, data = duncan_data)
+summary(m1)
+```
+Both of the coefficients for education and income are statistically significant, with their respective p-values being well-below 0.001 (p < 0.001). In addition, the p-value for the F-Statistic for the model is also very small (p < 0.001), suggesting a general good fit of the model as a whole. 
+
+```{r}
+deviance(m1)
+pchisq(deviance(m1), m1$df.residual)
+```
+In addition, the residual deviance (and the p-value associated with the chi-squared distribution associated with the model's deviance) shows that this specification performs similarly well to the saturated model. This in turn suggests that our current model is a good one, appropriately describing/fitting the variation in the data that we have. 
+
+Furthermore, the 2 covariates (education and income) explain a large amount of the variation found in the data for occupational prestige, which is reflected in the large R-Squared value of 0.82. 
+
+Because of the elements above, it appears that education and income provide a good model to describe the data patterns found in terms of educational prestige. However, all we have at this point are associations and not necessarily explanations (which in my view imply some sort of causal relationship).
+
+A change of 1-unit of income is associated with an increase of 0.598 units of occupational prestige, and this coefficient is statistically significant, holding education constant. 
+
+On the other hand, a change of 1-unit of education (holding income constant) is associated with an increase of 0.545 units in occupational prestige. 
+
+As such, a change of 1-unit in income is associated with a larger change in prestige than a change in 1-unit of education. **However**, this comparison is not straightforward since the units of education and income may not be equivalent or equal. Standardizing these units (in terms of standard deviations, for example) would help in making these coefficients more readily comparable. 
+:::
+
+#### B. Model 2
+
+Now, add in the `type` of occupation to the model. Is the model with `type` a better model? Explain what statistics you would use to make this decision, conduct the analysis, and interpret the results.
+
+::: {.callout-tip icon="false"}
+## Solution
+
+```{r}
+m2 <- lm(prestige ~ education + income + type, data = duncan_data)
+summary(m2)
+```
+To assess whether the second model (m2) is better than the previous one, I will use 3 statistics: 
+
+* The residual deviances of each model, 
+* The AIC statistic of each model, 
+* An ANOVA test to determine whether including "type" improves the model fit. 
+
+**Deviance**
+```{r}
+deviance(m1)
+deviance(m2)
+```
+As we can see, the residual deviance of the m2 is smaller than that of m1 (and the df are bigger, mechanically), but both of them still suggest a good fit with respect to the saturated model. This can be seen by the fact that both measures of deviance are associated with a large chi-squared p-value. 
+```{r}
+pchisq(deviance(m1), m1$df.residual)
+pchisq(deviance(m2), m2$df.residual)
+```
+
+As a result, based on the residual deviances, we find good fit for both models and are not able to discriminate between them. 
+
+**AIC statistic**
+
+The second criterion that I will use is the AIC statistic. Typically, a smaller AIC score suggests a more preferable model. 
+```{r}
+AIC(m1)
+AIC(m2)
+```
+As we can see, the AIC for the second model (M2) is smaller, suggesting a better fit for this specification. Based on this diagnostic, I would pick the M2 model. 
+
+**ANOVA test**
+
+Finally, I will perform an ANOVA test to assess whether including "type" significantly improves the model's fit. 
+```{r}
+anova(m1, m2)
+```
+As we can see from the results above, including the type variable improves the model's fit in a statistically significant way, based on the analysis of variance (ANOVA) test. 
+
+Jointly with the results based on AIC, the evidence shows that the full model **(M2) provides a better fit for the data and should be preferred**. 
+:::
+
+
+### 3. Regression Diagnostics
+
+#### A. Non-normality
+
+The `rstudent()` function returns studentized residuals, and the `densityPlot()` function fits an adaptive kernel density estimator to the distribution of the studentized residuals. A `qqPlot()` can be used as a check for nonnormal errors, comparing the studentized residuals to a t-distribution.
+
+Use these to examine the results of your best model from Question 2. What do you conclude?
+
+::: {.callout-tip icon="false"}
+## Solution
+
+I will produce two outputs below: 
+
+1. An estimated density plot of the studentized residuals of Model 2.
+2. A qq-plot that compares the studentized residuals of Model 2 against the theoretical quantiles of a t-distribution.
+
+```{r fig.height=5, fig.width=5}
+student_residuals <- rstudent(m2)
+# Density Plot of the Studentized residuals from Model 2
+densityPlot(student_residuals)
+
+# QQ Plot (against a t-distribution) of the residuals in Model 2
+qqPlot(m2)
+```
+
+As we can see from the output above, the Model 2 seems to conform quite well to the normality of errors assumption needed for a linear regression model. The density plot of the t-residuals looks pretty close to a symmetric and normal distribution, perhaps with a bit of a long positive tail. 
+
+Similarly, the qq-plot shows that the studentized residuals fit pretty well the theoretical quantiles reflected in the 45-degree line. The fit is quite good overall, perhaps with some exceptions towards the very low and very high quantiles. 
+
+Overall, the normality of errors assumption does not seem to be a problem for Model 2. 
+
+:::
+
+#### B. Influence = outliers \* leverage
+
+The `outlierTest()` function tests for outliers in the regression. The `influenceIndexPlot()` function creates a graph that displays influence measures in index plots. The `avPlots()` function creates added variable plots, which allow you to visualize how influential data points might be affecting (or not) the estimated coefficients.
+
+Using these (and/or other tools), using your preferred model from Question 2, are there any influential data points?
+
+If the diagnostics suggest that there are influential points, does removing these influential points change the results of the analysis? Compare models using the `compareCoefs()` function. What do you conclude?
+
+::: {.callout-tip icon="false"}
+## Solution
+
+YOUR SOLUTION HERE
+
+```{r}
+
+```
+
+:::
+
+#### C. Non-linearity 
+
+Component-plus-residual plots allow for the detection of non-linearity in the partial relationship between each covariate and the outcome. These can be created using the `crPlots()` function.
+
+For your preferred model, does it appear there is any nonlinearity? Explain.
+
+::: {.callout-tip icon="false"}
+## Solution
+
+YOUR SOLUTION HERE
+
+```{r fig.height=4, fig.width=8}
+
+```
+
+:::
+
+#### D. Heteroscedasticity
+
+Non-constant error variance can be tested using the `ncvTest()` function.
+
+Does it appear that this is a concern with this data? Explain
+
+::: {.callout-tip icon="false"}
+## Solution
+
+YOUR SOLUTION HERE
+
+```{r}
+
+```
+
+:::
+
+### 4. Interpretation
+
+Should the model above be used to answer a descriptive, explanatory, or predictive question? Explain your answer.
+
+::: {.callout-tip icon="false"}
+## Solution
+
+YOUR SOLUTION HERE
+
+:::
+
