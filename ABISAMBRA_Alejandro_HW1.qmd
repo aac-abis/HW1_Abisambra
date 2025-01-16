@@ -250,11 +250,38 @@ If the diagnostics suggest that there are influential points, does removing thes
 ::: {.callout-tip icon="false"}
 ## Solution
 
-YOUR SOLUTION HERE
 
 ```{r}
+outlierTest(m2)
+```
+As we can see from the results of the Bonferroni test above, there is 1 observation/occupation that can be considered as an outlier in the model. The Minister occupation. This can be due to the fact that it is an occupation that is also thought as being somewhat outside of the "market logic" and more into a spiritual domain, which may create different perceptions of prestige and required credentials. 
+
+This result confirms what we could also see in the qq-plot, where the minister's studentized residual was the largest and out of the confidence interval region. From this qq-plot we can also see that the machinist occupation is also near the threshold, albeit still withing the bounds of non-significantly outlying. 
+
+To additionally test whether the Minister observation (or others) have an undue weight (influence) on the models point estimates, I will produce influence plots that contain the Cook distance. 
+
+```{r fig.height=5, fig.width=7}
+influenceIndexPlot(m2)
+```
+As we can see from the plot above, the Minister occupation does appear to have high influence on the model, as reflected by the high Cook distance measure. 
+
+The Machinist occupation only stands out in terms of the Studentized Residual and the Bonferroni p-value (which feed off each other), but does not stand out in terms of the Cook distance or the Hat-values. As such, I will not consider the Machinist to be an influential data point. The same logic applies to the Conductor and RR engineer occupations, since they only stand out in terms of hat-value but not in Cook distance or Bonferroni outlier test. 
+
+**Based on the above, I will re-run the Model 2 excluding the Minister observation and compare the coefficients**
+
+```{r}
+duncan_data_m2a <- duncan_data %>% 
+                      filter(., rownames(duncan_data) != "minister")
+
+m2a <- lm(prestige ~ education + income + type, data = duncan_data_m2a)
+compareCoefs(m2, m2a, pvals = TRUE)
 
 ```
+From the table above, we can see that excluding the Minister occupation does result in changes in the magnitude of the coefficients of interest, but it does not affect their sign or the significance (at the p < 0.05 level) of the estimates. The coefficients that were statistically significant remain so, and vice-versa. 
+
+In conclusion, while the Minister occupation was an influential datapoint, its exclusion or inclusion does not meaningfully affect the general interpretation that we take from the model. The coefficients remain of the same sign, remain equally significant, and the change in magnitude of the coefficients does not appear to be too large. However, I would need to know more about the scale of the prestige variable (the outcome) to better assess what these magnitudes mean.
+
+Because of the above, my prefered model remains the one that *includes* the minister occupation and all covariates (Model 2).
 
 :::
 
@@ -267,11 +294,10 @@ For your preferred model, does it appear there is any nonlinearity? Explain.
 ::: {.callout-tip icon="false"}
 ## Solution
 
-YOUR SOLUTION HERE
-
-```{r fig.height=4, fig.width=8}
-
+```{r fig.height=8, fig.width=6}
+crPlots(m2, terms = ~ education + income, layout = c(2,1))
 ```
+The plots above do not show evidence of a non-linear relationship between the continuous predictors and the outcome of interest (prestige). The component + residual plots show the predicted values to hover around the expected linear relationship, without a clear pattern to suggest otherwise. 
 
 :::
 
@@ -287,8 +313,11 @@ Does it appear that this is a concern with this data? Explain
 YOUR SOLUTION HERE
 
 ```{r}
-
+ncvTest(m2)
 ```
+For the ncvTest, the null hypothesis is that there is a constant error variance. The alternate hypothesis is that there is NOT constant error variance (heteroskedasticity). 
+
+From the results above, we see that there is NO evidence to reject the null hypothesis (p-val = 0.62). As such, the test does NOT suggest the presence of heteroskedasticity, which is what we assume when fitting a regular OLS model. This is a good outcome!
 
 :::
 
