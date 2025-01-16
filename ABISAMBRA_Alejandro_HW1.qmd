@@ -310,8 +310,6 @@ Does it appear that this is a concern with this data? Explain
 ::: {.callout-tip icon="false"}
 ## Solution
 
-YOUR SOLUTION HERE
-
 ```{r}
 ncvTest(m2)
 ```
@@ -327,8 +325,13 @@ Should the model above be used to answer a descriptive, explanatory, or predicti
 
 ::: {.callout-tip icon="false"}
 ## Solution
+This model should **not** be used to answer explanatory/causal questions. We do not have enough background information/context/quasi-experimental setting to infer that the associations found in the model are causal relationships. At this stage, and based on the limited information we have, these associations could be masking ommited variables that are the underlying common cause of covariates and outcome (or otherwise related to them). Even assuming causality, it would still be unclear whether income causes prestige, or the other way around (reverse causality). 
 
-YOUR SOLUTION HERE
+In sum, this model should not be used for causal inference purposes. It is too bare-bones for it at the moment. 
+
+Instead, it **should be used as an exploratory/descriptive model** that allows us to identify some associations and relationships between concepts of interest (and their respective operationalized variables). In this case, we can find descriptive associations between prestige-income and prestige-education, for example. These initial descriptions of the world will allow us to focus more specifically on these domains, ask further questions, and come up with further research designs that will result in future models that will potentially allow us to make informed causal inference arguments. 
+
+Finally, **the model has promising features for predictive purposes**, but here it is still crucial to test this model with its estimates on out-of-pool data to see how it performs outside of the data that was used to estimate the model itself. The model has a high R-squared, reflecting the fact that it is able to account for a large part of the variance of the outcome. The model also has a low p-value for the model's F-statistic and its deviance shows that it performs well when compared to the saturated model (residual deviance test performed in section 1). For these reasons, the model has promising features in terms of prediction, but -again- this is all speculative until the model is actually tested against new data. 
 
 :::
 
